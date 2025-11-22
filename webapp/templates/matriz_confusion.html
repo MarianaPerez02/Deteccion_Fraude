@@ -1,0 +1,157 @@
+{% extends "base.html" %}
+
+{% block title %}Matrices de Confusión{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h1 class="mb-4">
+            <i class="fas fa-table"></i> Matrices de Confusión
+        </h1>
+    </div>
+</div>
+
+<!-- Explicación -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0"><i class="fas fa-info-circle"></i> ¿Qué es una Matriz de Confusión?</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-8">
+                        <p>
+                            La matriz de confusión muestra el rendimiento de un modelo de clasificación,
+                            comparando las predicciones con los valores reales.
+                        </p>
+                        <div class="row mt-3">
+                            <div class="col-md-6">
+                                <h6 class="text-success"><i class="fas fa-check"></i> Predicciones Correctas</h6>
+                                <ul>
+                                    <li><strong>Verdaderos Negativos (TN):</strong> Transacciones legítimas identificadas correctamente</li>
+                                    <li><strong>Verdaderos Positivos (TP):</strong> Fraudes detectados correctamente</li>
+                                </ul>
+                            </div>
+                            <div class="col-md-6">
+                                <h6 class="text-danger"><i class="fas fa-times"></i> Errores</h6>
+                                <ul>
+                                    <li><strong>Falsos Positivos (FP):</strong> Legítimas marcadas como fraude</li>
+                                    <li><strong>Falsos Negativos (FN):</strong> Fraudes no detectados ⚠️</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="alert alert-warning">
+                            <h6><i class="fas fa-exclamation-triangle"></i> Importante</h6>
+                            <p class="small mb-0">
+                                En detección de fraude, los <strong>Falsos Negativos</strong> son críticos
+                                porque representan fraudes que no detectamos.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Matrices de Confusión -->
+{% if figures %}
+<div class="row">
+    {% for figure in figures %}
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">{{ figure.model }}</h5>
+            </div>
+            <div class="card-body">
+                <div id="graph-{{ loop.index }}"></div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="row">
+    <div class="col-12">
+        <div class="alert alert-warning" role="alert">
+            <i class="fas fa-exclamation-triangle"></i>
+            No hay matrices de confusión disponibles. Asegúrese de que los modelos estén entrenados.
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Fórmulas de Métricas -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header bg-secondary text-white">
+                <h5 class="mb-0"><i class="fas fa-calculator"></i> Cálculo de Métricas desde la Matriz</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3">
+                        <div class="card bg-light h-100">
+                            <div class="card-body">
+                                <h6 class="text-primary">Accuracy</h6>
+                                <p class="small mb-0">
+                                    <code>(TP + TN) / Total</code><br>
+                                    Porcentaje de predicciones correctas
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card bg-light h-100">
+                            <div class="card-body">
+                                <h6 class="text-info">Precision</h6>
+                                <p class="small mb-0">
+                                    <code>TP / (TP + FP)</code><br>
+                                    De lo que predijimos como fraude, ¿cuánto era correcto?
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card bg-light h-100">
+                            <div class="card-body">
+                                <h6 class="text-success">Recall</h6>
+                                <p class="small mb-0">
+                                    <code>TP / (TP + FN)</code><br>
+                                    De todos los fraudes reales, ¿cuántos detectamos?
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card bg-light h-100">
+                            <div class="card-body">
+                                <h6 class="text-warning">F1-Score</h6>
+                                <p class="small mb-0">
+                                    <code>2 × (P × R) / (P + R)</code><br>
+                                    Media armónica de Precision y Recall
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+{% if figures %}
+<script>
+    {% for figure in figures %}
+    var graphData{{ loop.index }} = {{ figure.graph | safe }};
+    Plotly.newPlot('graph-{{ loop.index }}', graphData{{ loop.index }}.data, graphData{{ loop.index }}.layout);
+    {% endfor %}
+</script>
+{% endif %}
+{% endblock %}

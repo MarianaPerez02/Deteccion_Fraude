@@ -1,0 +1,235 @@
+{% extends "base.html" %}
+
+{% block title %}Predicción de Fraude{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h1 class="mb-4">
+            <i class="fas fa-search"></i> Predicción de Fraude
+        </h1>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Formulario de Predicción -->
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="fas fa-edit"></i> Datos de la Transacción</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST" id="predictionForm">
+                    <div class="mb-3">
+                        <label for="amount" class="form-label">
+                            <i class="fas fa-dollar-sign"></i> Monto de Transacción
+                        </label>
+                        <input type="number" step="0.01" class="form-control" id="amount" name="amount"
+                               value="{{ features.Amount if features else '' }}" required>
+                        <small class="form-text text-muted">Ingrese el monto de la transacción</small>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="time" class="form-label">
+                            <i class="fas fa-clock"></i> Tiempo (segundos desde primera transacción)
+                        </label>
+                        <input type="number" step="1" class="form-control" id="time" name="time"
+                               value="{{ features.Time if features else '0' }}" required>
+                        <small class="form-text text-muted">Segundos transcurridos desde la primera transacción</small>
+                    </div>
+
+                    <div class="accordion mb-3" id="accordionFeatures">
+                        <div class="accordion-item">
+                            <h2 class="accordion-header" id="headingFeatures">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
+                                        data-bs-target="#collapseFeatures">
+                                    <i class="fas fa-cog"></i> Features Adicionales (V1-V28) - Opcional
+                                </button>
+                            </h2>
+                            <div id="collapseFeatures" class="accordion-collapse collapse"
+                                 data-bs-parent="#accordionFeatures">
+                                <div class="accordion-body">
+                                    <p class="text-muted small">
+                                        Estos son componentes principales (PCA) de las características originales.
+                                        Dejar en 0 si no tiene esta información.
+                                    </p>
+                                    <div class="row">
+                                        {% for i in range(1, 29) %}
+                                        <div class="col-md-4 col-sm-6 mb-2">
+                                            <label for="V{{ i }}" class="form-label small">V{{ i }}</label>
+                                            <input type="number" step="0.0001" class="form-control form-control-sm"
+                                                   id="V{{ i }}" name="V{{ i }}"
+                                                   value="{{ features['V' ~ i] if features else '0' }}">
+                                        </div>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            <i class="fas fa-search"></i> Analizar Transacción
+                        </button>
+                        <button type="button" class="btn btn-secondary" onclick="generateRandomData()">
+                            <i class="fas fa-random"></i> Generar Datos de Ejemplo
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Resultados -->
+    <div class="col-md-6">
+        {% if result %}
+        <div class="card mb-3">
+            <div class="card-header {% if result.is_fraud %}bg-danger{% else %}bg-success{% endif %} text-white">
+                <h5 class="mb-0">
+                    <i class="fas {% if result.is_fraud %}fa-exclamation-triangle{% else %}fa-check-circle{% endif %}"></i>
+                    Resultado del Análisis
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="text-center mb-3">
+                    <h2 class="{% if result.is_fraud %}text-danger{% else %}text-success{% endif %}">
+                        {% if result.is_fraud %}
+                        <i class="fas fa-times-circle"></i> TRANSACCIÓN FRAUDULENTA
+                        {% else %}
+                        <i class="fas fa-check-circle"></i> TRANSACCIÓN LEGÍTIMA
+                        {% endif %}
+                    </h2>
+                </div>
+
+                <div class="row text-center mb-3">
+                    <div class="col-6">
+                        <div class="card bg-light">
+                            <div class="card-body">
+                                <h6 class="card-subtitle mb-2 text-muted">Probabilidad de Fraude</h6>
+                                <h3 class="text-danger">{{ "%.2f%%"|format(result.probability_fraud * 100) }}</h3>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="card bg-light">
+                            <div class="card-body">
+                                <h6 class="card-subtitle mb-2 text-muted">Probabilidad Legítima</h6>
+                                <h3 class="text-success">{{ "%.2f%%"|format(result.probability_legitimate * 100) }}</h3>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {% if graph_prob %}
+                <div id="graph-prob" class="mb-3"></div>
+                {% endif %}
+
+                <div class="alert {% if result.is_fraud %}alert-danger{% else %}alert-success{% endif %}" role="alert">
+                    <strong>Recomendación:</strong>
+                    {% if result.is_fraud %}
+                    Se recomienda <strong>bloquear o revisar</strong> esta transacción inmediatamente.
+                    {% else %}
+                    La transacción parece ser legítima. Puede proceder con normalidad.
+                    {% endif %}
+                </div>
+
+                {% if result.confidence %}
+                <div class="progress mb-2">
+                    <div class="progress-bar {% if result.is_fraud %}bg-danger{% else %}bg-success{% endif %}"
+                         role="progressbar" style="width: {{ result.confidence * 100 }}%">
+                        Confianza: {{ "%.1f%%"|format(result.confidence * 100) }}
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        {% if result.model_used %}
+        <div class="card">
+            <div class="card-header bg-info text-white">
+                <h6 class="mb-0"><i class="fas fa-info-circle"></i> Información del Modelo</h6>
+            </div>
+            <div class="card-body">
+                <p><strong>Modelo utilizado:</strong> {{ result.model_used }}</p>
+                {% if result.feature_importance %}
+                <p><strong>Características más importantes:</strong></p>
+                <ul class="small">
+                    {% for feature in result.feature_importance[:5] %}
+                    <li>{{ feature }}</li>
+                    {% endfor %}
+                </ul>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+
+        {% else %}
+        <div class="card border-primary">
+            <div class="card-body text-center py-5">
+                <i class="fas fa-arrow-left fa-3x text-muted mb-3"></i>
+                <h5 class="text-muted">Complete el formulario y presione "Analizar Transacción"</h5>
+                <p class="text-muted">Ingrese los datos de la transacción para obtener una predicción</p>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Información adicional -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header bg-secondary text-white">
+                <h5 class="mb-0"><i class="fas fa-question-circle"></i> ¿Cómo funciona?</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4">
+                        <h6><i class="fas fa-brain text-primary"></i> Machine Learning</h6>
+                        <p class="small">El modelo ha sido entrenado con miles de transacciones históricas para
+                            identificar patrones de fraude.</p>
+                    </div>
+                    <div class="col-md-4">
+                        <h6><i class="fas fa-chart-line text-success"></i> Análisis en Tiempo Real</h6>
+                        <p class="small">La predicción se realiza instantáneamente usando algoritmos optimizados
+                            de clasificación.</p>
+                    </div>
+                    <div class="col-md-4">
+                        <h6><i class="fas fa-shield-alt text-warning"></i> Alta Precisión</h6>
+                        <p class="small">El sistema prioriza detectar fraudes reales (alto recall) mientras
+                            mantiene baja tasa de falsas alarmas.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+{% if graph_prob %}
+<script>
+    var probData = {{ graph_prob | safe }};
+    Plotly.newPlot('graph-prob', probData.data, probData.layout);
+</script>
+{% endif %}
+
+<script>
+function generateRandomData() {
+    // Generar datos aleatorios de ejemplo
+    document.getElementById('amount').value = (Math.random() * 1000 + 10).toFixed(2);
+    document.getElementById('time').value = Math.floor(Math.random() * 172800); // 48 horas
+
+    // Generar valores aleatorios para V1-V28 (normalmente distribuidos)
+    for (let i = 1; i <= 28; i++) {
+        // Generación simple de valores aleatorios entre -3 y 3
+        const randomValue = (Math.random() * 6 - 3).toFixed(4);
+        document.getElementById('V' + i).value = randomValue;
+    }
+
+    alert('Datos de ejemplo generados. Puede modificarlos antes de analizar.');
+}
+</script>
+{% endblock %}

@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Detección de Fraude{% endblock %}
+
+{% block content %}
+<div class="row mb-2">
+    <div class="col-12">
+        <h1 class="mb-2">
+            <i class="fas fa-tachometer-alt"></i> Dashboard - Sistema de Detección de Fraude
+        </h1>
+    </div>
+</div>
+
+<!-- KPIs -->
+<div class="row mb-2">
+    <div class="col-md-3">
+        <div class="card text-white bg-info mb-3">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="card-title">Total Transacciones</h6>
+                        <h2 class="mb-0">{{ kpis.total_transacciones }}</h2>
+                    </div>
+                    <div>
+                        <i class="fas fa-credit-card fa-3x opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="card text-white bg-danger mb-3">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="card-title">Fraudes Detectados</h6>
+                        <h2 class="mb-0">{{ kpis.fraudes_detectados }}</h2>
+                    </div>
+                    <div>
+                        <i class="fas fa-exclamation-triangle fa-3x opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="card text-white bg-success mb-3">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="card-title">Precisión Modelo</h6>
+                        <h2 class="mb-0">{{ "%.2f%%"|format(kpis.accuracy * 100) if kpis.accuracy != 'N/A' else 'N/A' }}</h2>
+                    </div>
+                    <div>
+                        <i class="fas fa-check-circle fa-3x opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="card text-white bg-warning mb-3">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="card-title">Recall (Sensibilidad)</h6>
+                        <h2 class="mb-0">{{ "%.2f%%"|format(kpis.recall * 100) if kpis.recall != 'N/A' else 'N/A' }}</h2>
+                    </div>
+                    <div>
+                        <i class="fas fa-bullseye fa-3x opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<!-- Gráfico de Distribución -->
+{% if graph_dist %}
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="fas fa-chart-pie"></i> Distribución de Transacciones</h5>
+            </div>
+            <div class="card-body">
+                <div id="graph-dist"></div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+
+{% endblock %}
+
+{% block extra_js %}
+{% if graph_dist %}
+<script>
+    var graphData = {{ graph_dist | safe }};
+    Plotly.newPlot('graph-dist', graphData.data, graphData.layout);
+</script>
+{% endif %}
+{% endblock %}
