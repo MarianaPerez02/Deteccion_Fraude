@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(del \"c:\\Users\\marianaH\\Documents\\Proyecto_Final\\Notebook\\fraude_Tarjetas.ipynb\")",
+      "Bash(rm:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
