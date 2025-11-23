@@ -37,36 +37,6 @@
 </div>
 {% endif %}
 
-<!-- Amount and Time Distribution -->
-<div class="row mb-2">
-    {% if fig_amount %}
-    <div class="col-md-6">
-        <div class="card">
-            <div class="card-header bg-success text-white">
-                <h5 class="mb-0"><i class="fas fa-dollar-sign"></i> Distribución de Amount por Clase</h5>
-            </div>
-            <div class="card-body">
-                <p class="text-muted">Estadísticas del monto de transacción</p>
-                <div id="graph-amount"></div>
-            </div>
-        </div>
-    </div>
-    {% endif %}
-
-    {% if fig_time %}
-    <div class="col-md-6">
-        <div class="card">
-            <div class="card-header bg-info text-white">
-                <h5 class="mb-0"><i class="fas fa-clock"></i> Distribución de Time por Clase</h5>
-            </div>
-            <div class="card-body">
-                <p class="text-muted">Estadísticas temporales de transacción</p>
-                <div id="graph-time"></div>
-            </div>
-        </div>
-    </div>
-    {% endif %}
-</div>
 
 <!-- Metrics Comparison Subplots -->
 {% if fig_metrics_comparison %}
@@ -151,12 +121,47 @@
 {% endblock %}
 
 {% block extra_js %}
+<style>
+    /* Asegurar que los gráficos se ajusten a sus contenedores */
+    .card-body > div[id^="graph-"] {
+        width: 100%;
+        overflow: hidden;
+    }
+
+    /* Prevenir que los gráficos se salgan de la tarjeta */
+    .card-body {
+        overflow: hidden;
+    }
+</style>
+
+<script>
+// Configuración común para todos los gráficos de Plotly
+var plotlyConfig = {
+    responsive: true,
+    displayModeBar: true,
+    displaylogo: false,
+    modeBarButtonsToRemove: ['pan2d', 'lasso2d', 'select2d']
+};
+
+var plotlyLayout = {
+    autosize: true,
+    margin: { l: 60, r: 40, t: 60, b: 80 }
+};
+</script>
+
 <!-- Feature Importance Graphs -->
 {% if fig_importance_list %}
 {% for fig_data in fig_importance_list %}
 <script>
     var importanceData{{ loop.index }} = {{ fig_data.graph | safe }};
-    Plotly.newPlot('graph-importance-{{ loop.index }}', importanceData{{ loop.index }}.data, importanceData{{ loop.index }}.layout);
+    // Forzar que el layout sea responsive
+    importanceData{{ loop.index }}.layout.autosize = true;
+    importanceData{{ loop.index }}.layout.height = 400;
+    Plotly.newPlot('graph-importance-{{ loop.index }}',
+        importanceData{{ loop.index }}.data,
+        importanceData{{ loop.index }}.layout,
+        plotlyConfig
+    );
 </script>
 {% endfor %}
 {% endif %}
@@ -165,15 +170,19 @@
 {% if fig_amount %}
 <script>
     var amountData = {{ fig_amount | safe }};
-    Plotly.newPlot('graph-amount', amountData.data, amountData.layout);
+    amountData.layout.autosize = true;
+    amountData.layout.height = 400;
+    Plotly.newPlot('graph-amount', amountData.data, amountData.layout, plotlyConfig);
 </script>
 {% endif %}
 
-<!-- Amount Distribution Graph -->
+<!-- Time Distribution Graph -->
 {% if fig_time %}
 <script>
     var timeData = {{ fig_time | safe }};
-    Plotly.newPlot('graph-time', timeData.data, timeData.layout);
+    timeData.layout.autosize = true;
+    timeData.layout.height = 400;
+    Plotly.newPlot('graph-time', timeData.data, timeData.layout, plotlyConfig);
 </script>
 {% endif %}
 
@@ -181,7 +190,13 @@
 {% if fig_metrics_comparison %}
 <script>
     var metricsComparisonData = {{ fig_metrics_comparison | safe }};
-    Plotly.newPlot('graph-metrics-comparison', metricsComparisonData.data, metricsComparisonData.layout);
+    metricsComparisonData.layout.autosize = true;
+    metricsComparisonData.layout.height = 600;
+    Plotly.newPlot('graph-metrics-comparison',
+        metricsComparisonData.data,
+        metricsComparisonData.layout,
+        plotlyConfig
+    );
 </script>
 {% endif %}
 
@@ -189,7 +204,9 @@
 {% if fig_correlation %}
 <script>
     var correlationData = {{ fig_correlation | safe }};
-    Plotly.newPlot('graph-correlation', correlationData.data, correlationData.layout);
+    correlationData.layout.autosize = true;
+    correlationData.layout.height = 700;
+    Plotly.newPlot('graph-correlation', correlationData.data, correlationData.layout, plotlyConfig);
 </script>
 {% endif %}
 
@@ -197,7 +214,9 @@
 {% if fig_corr_class %}
 <script>
     var corrClassData = {{ fig_corr_class | safe }};
-    Plotly.newPlot('graph-corr-class', corrClassData.data, corrClassData.layout);
+    corrClassData.layout.autosize = true;
+    corrClassData.layout.height = 500;
+    Plotly.newPlot('graph-corr-class', corrClassData.data, corrClassData.layout, plotlyConfig);
 </script>
 {% endif %}
 
@@ -205,7 +224,19 @@
 {% if fig_balance %}
 <script>
     var balanceData = {{ fig_balance | safe }};
-    Plotly.newPlot('graph-balance', balanceData.data, balanceData.layout);
+    balanceData.layout.autosize = true;
+    balanceData.layout.height = 400;
+    Plotly.newPlot('graph-balance', balanceData.data, balanceData.layout, plotlyConfig);
 </script>
 {% endif %}
+
+<!-- Ajustar gráficos cuando cambia el tamaño de la ventana -->
+<script>
+    window.addEventListener('resize', function() {
+        var graphs = document.querySelectorAll('[id^="graph-"]');
+        graphs.forEach(function(graph) {
+            Plotly.Plots.resize(graph);
+        });
+    });
+</script>
 {% endblock %}

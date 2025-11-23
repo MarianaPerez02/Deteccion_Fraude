@@ -9,7 +9,8 @@ import numpy as np
 from pathlib import Path
 from sklearn.metrics import confusion_matrix, roc_curve, auc
 
-def export_models_from_notebook(models_dict, X_test, y_test, scaler=None, X_train=None, y_train=None):
+def export_models_from_notebook(models_dict, X_test, y_test, scaler=None, X_train=None, y_train=None,
+                                 y_train_original=None):
     """
     Exporta modelos entrenados y sus métricas para la webapp
 
@@ -18,6 +19,9 @@ def export_models_from_notebook(models_dict, X_test, y_test, scaler=None, X_trai
         X_test: Datos de prueba
         y_test: Etiquetas de prueba
         scaler: Scaler usado para normalización (opcional)
+        X_train: Datos de entrenamiento (después de balanceo) (opcional)
+        y_train: Etiquetas de entrenamiento (después de balanceo) (opcional)
+        y_train_original: Etiquetas de entrenamiento ANTES de balanceo (opcional)
 
     Ejemplo de uso en el notebook:
         from export_models import export_models_from_notebook
@@ -27,6 +31,11 @@ def export_models_from_notebook(models_dict, X_test, y_test, scaler=None, X_trai
             'Random Forest': rf_model,
             'XGBoost': xgb_model
         }
+
+        # Con balanceo de clases
+        export_models_from_notebook(models, X_test, y_test, scaler,
+                                    X_train_balanced, y_train_balanced,
+                                    y_train_original=y_train)
 
         export_models_from_notebook(models, X_test, y_test, scaler)
     """
@@ -251,18 +260,34 @@ def export_models_from_notebook(models_dict, X_test, y_test, scaler=None, X_trai
             }
 
             # Balanceo de clases (antes y después)
-            all_metrics['class_balance'] = {
-                'before': {
-                    'no_fraude': int((y_train == 0).sum()),
-                    'fraude': int((y_train == 1).sum())
-                },
-                'after': {
-                    'no_fraude': int((y_train == 0).sum()),
-                    'fraude': int((y_train == 1).sum())
-                },
-                'total_before': int(len(y_train)),
-                'total_after': int(len(y_train))
-            }
+            # Si tenemos y_train_original, usarlo para 'before', sino usar y_train para ambos
+            if y_train_original is not None:
+                all_metrics['class_balance'] = {
+                    'before': {
+                        'no_fraude': int((y_train_original == 0).sum()),
+                        'fraude': int((y_train_original == 1).sum())
+                    },
+                    'after': {
+                        'no_fraude': int((y_train == 0).sum()),
+                        'fraude': int((y_train == 1).sum())
+                    },
+                    'total_before': int(len(y_train_original)),
+                    'total_after': int(len(y_train))
+                }
+            else:
+                # Si no hay y_train_original, ambos serán iguales
+                all_metrics['class_balance'] = {
+                    'before': {
+                        'no_fraude': int((y_train == 0).sum()),
+                        'fraude': int((y_train == 1).sum())
+                    },
+                    'after': {
+                        'no_fraude': int((y_train == 0).sum()),
+                        'fraude': int((y_train == 1).sum())
+                    },
+                    'total_before': int(len(y_train)),
+                    'total_after': int(len(y_train))
+                }
 
             print("\n   OK - Analisis de distribucion de Amount y Time agregado")
             print("   OK - Matriz de correlacion agregada")
