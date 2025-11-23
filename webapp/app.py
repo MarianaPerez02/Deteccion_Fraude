@@ -294,5 +294,370 @@ def matriz_confusion():
     except Exception as e:
         return render_template('matriz_confusion.html', error=str(e))
 
+@app.route('/analisis')
+def analisis():
+    """Página de análisis exploratorio con Feature Importance y distribuciones"""
+    try:
+        metrics = get_model_metrics()
+
+        # Feature Importance
+        feature_importance_data = metrics.get('feature_importance', {})
+        fig_importance_list = []
+
+        for model_name, importance_info in feature_importance_data.items():
+            features = importance_info.get('features', [])
+            importances = importance_info.get('importances', [])
+
+            if features and importances:
+                fig = go.Figure(data=[
+                    go.Bar(
+                        x=importances,
+                        y=features,
+                        orientation='h',
+                        marker_color='#3498db',
+                        text=[f'{val:.4f}' for val in importances],
+                        textposition='outside',
+                        textfont=dict(size=10)
+                    )
+                ])
+                fig.update_layout(
+                    title={
+                        'text': f'Importancia de Características - {model_name}',
+                        'x': 0.5,
+                        'xanchor': 'center'
+                    },
+                    xaxis_title='Importancia',
+                    yaxis_title='Característica',
+                    template='plotly_white',
+                    height=500,
+                    margin=dict(l=80, r=80, t=80, b=50),
+                    yaxis=dict(autorange='reversed')
+                )
+                fig_importance_list.append({
+                    'model': model_name,
+                    'graph': json.dumps(fig, cls=PlotlyJSONEncoder)
+                })
+
+        # Distribución de Amount por clase
+        data_analysis = metrics.get('data_analysis', {})
+        amount_dist = data_analysis.get('amount_distribution', {})
+
+        fig_amount = None
+        if amount_dist:
+            fraude_stats = amount_dist.get('fraude', {})
+            no_fraude_stats = amount_dist.get('no_fraude', {})
+
+            # Crear gráfico de barras agrupadas para comparar estadísticas
+            categories = ['Media', 'Mediana', 'Desv. Est.', 'Mínimo', 'Máximo']
+            fraude_values = [
+                fraude_stats.get('mean', 0),
+                fraude_stats.get('median', 0),
+                fraude_stats.get('std', 0),
+                fraude_stats.get('min', 0),
+                fraude_stats.get('max', 0)
+            ]
+            no_fraude_values = [
+                no_fraude_stats.get('mean', 0),
+                no_fraude_stats.get('median', 0),
+                no_fraude_stats.get('std', 0),
+                no_fraude_stats.get('min', 0),
+                no_fraude_stats.get('max', 0)
+            ]
+
+            fig_amount = go.Figure(data=[
+                go.Bar(
+                    name='Fraude',
+                    x=categories,
+                    y=fraude_values,
+                    marker_color='#e74c3c',
+                    text=[f'${val:.2f}' for val in fraude_values],
+                    textposition='outside',
+                    textfont=dict(size=10)
+                ),
+                go.Bar(
+                    name='No Fraude',
+                    x=categories,
+                    y=no_fraude_values,
+                    marker_color='#2ecc71',
+                    text=[f'${val:.2f}' for val in no_fraude_values],
+                    textposition='outside',
+                    textfont=dict(size=10)
+                )
+            ])
+            fig_amount.update_layout(
+                title={
+                    'text': 'Estadísticas de Amount por Clase',
+                    'x': 0.5,
+                    'xanchor': 'center'
+                },
+                xaxis_title='Estadística',
+                yaxis_title='Valor ($)',
+                barmode='group',
+                template='plotly_white',
+                height=450,
+                margin=dict(l=50, r=50, t=80, b=50),
+                legend=dict(
+                    orientation="h",
+                    yanchor="bottom",
+                    y=1.02,
+                    xanchor="right",
+                    x=1
+                )
+            )
+            fig_amount = json.dumps(fig_amount, cls=PlotlyJSONEncoder)
+
+        # Comparación de métricas por modelo (4 subplots)
+        models_comparison = metrics.get('models_comparison', [])
+        fig_metrics_comparison = None
+
+        if models_comparison:
+            from plotly.subplots import make_subplots
+
+            df_models = pd.DataFrame(models_comparison)
+
+            fig_metrics_comparison = make_subplots(
+                rows=2, cols=2,
+                subplot_titles=('Precision', 'Recall', 'F1-Score', 'ROC-AUC')
+            )
+
+            metrics_list = [
+                ('precision', 1, 1),
+                ('recall', 1, 2),
+                ('f1_score', 2, 1),
+                ('roc_auc', 2, 2)
+            ]
+
+            colors = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd']
+
+            for metric, row, col in metrics_list:
+                if metric in df_models.columns:
+                    for idx, (model_name, value) in enumerate(zip(df_models['model'], df_models[metric])):
+                        fig_metrics_comparison.add_trace(
+                            go.Bar(
+                                x=[model_name],
+                                y=[value],
+                                name=model_name,
+                                marker_color=colors[idx % len(colors)],
+                                text=f'{value:.4f}',
+                                textposition='outside',
+                                textfont=dict(size=10),
+                                showlegend=(row == 1 and col == 1)
+                            ),
+                            row=row, col=col
+                        )
+
+            fig_metrics_comparison.update_layout(
+                title={
+                    'text': 'Comparación Detallada de Métricas por Modelo',
+                    'x': 0.5,
+                    'xanchor': 'center'
+                },
+                template='plotly_white',
+                height=700,
+                margin=dict(l=50, r=50, t=100, b=50)
+            )
+            fig_metrics_comparison.update_yaxes(range=[0, 1.1])
+            fig_metrics_comparison = json.dumps(fig_metrics_comparison, cls=PlotlyJSONEncoder)
+
+        # Distribución de Time por clase
+        time_dist = data_analysis.get('time_distribution', {})
+        fig_time = None
+
+        if time_dist:
+            fraude_stats = time_dist.get('fraude', {})
+            no_fraude_stats = time_dist.get('no_fraude', {})
+
+            categories = ['Media', 'Mediana', 'Desv. Est.', 'Mínimo', 'Máximo']
+            fraude_values = [
+                fraude_stats.get('mean', 0),
+                fraude_stats.get('median', 0),
+                fraude_stats.get('std', 0),
+                fraude_stats.get('min', 0),
+                fraude_stats.get('max', 0)
+            ]
+            no_fraude_values = [
+                no_fraude_stats.get('mean', 0),
+                no_fraude_stats.get('median', 0),
+                no_fraude_stats.get('std', 0),
+                no_fraude_stats.get('min', 0),
+                no_fraude_stats.get('max', 0)
+            ]
+
+            fig_time = go.Figure(data=[
+                go.Bar(
+                    name='Fraude',
+                    x=categories,
+                    y=fraude_values,
+                    marker_color='#e74c3c',
+                    text=[f'{val:.2f}' for val in fraude_values],
+                    textposition='outside',
+                    textfont=dict(size=10)
+                ),
+                go.Bar(
+                    name='No Fraude',
+                    x=categories,
+                    y=no_fraude_values,
+                    marker_color='#2ecc71',
+                    text=[f'{val:.2f}' for val in no_fraude_values],
+                    textposition='outside',
+                    textfont=dict(size=10)
+                )
+            ])
+            fig_time.update_layout(
+                title={
+                    'text': 'Estadísticas de Time por Clase',
+                    'x': 0.5,
+                    'xanchor': 'center'
+                },
+                xaxis_title='Estadística',
+                yaxis_title='Valor (segundos)',
+                barmode='group',
+                template='plotly_white',
+                height=450,
+                margin=dict(l=50, r=50, t=80, b=50),
+                legend=dict(
+                    orientation="h",
+                    yanchor="bottom",
+                    y=1.02,
+                    xanchor="right",
+                    x=1
+                )
+            )
+            fig_time = json.dumps(fig_time, cls=PlotlyJSONEncoder)
+
+        # Matriz de correlación
+        correlation_matrix = metrics.get('correlation_matrix', {})
+        fig_correlation = None
+
+        if correlation_matrix:
+            corr_values = correlation_matrix.get('values', [])
+            corr_columns = correlation_matrix.get('columns', [])
+
+            if corr_values and corr_columns:
+                fig_correlation = go.Figure(data=go.Heatmap(
+                    z=corr_values,
+                    x=corr_columns,
+                    y=corr_columns,
+                    colorscale='RdBu_r',
+                    zmid=0,
+                    colorbar=dict(title="Correlación")
+                ))
+                fig_correlation.update_layout(
+                    title={
+                        'text': 'Matriz de Correlación - Todas las Variables',
+                        'x': 0.5,
+                        'xanchor': 'center'
+                    },
+                    template='plotly_white',
+                    height=700,
+                    margin=dict(l=50, r=50, t=80, b=50)
+                )
+                fig_correlation = json.dumps(fig_correlation, cls=PlotlyJSONEncoder)
+
+        # Correlación con variable objetivo
+        correlation_with_class = data_analysis.get('correlation_with_class', {})
+        fig_corr_class = None
+
+        if correlation_with_class:
+            features = correlation_with_class.get('features', [])
+            correlations = correlation_with_class.get('correlations', [])
+
+            if features and correlations:
+                fig_corr_class = go.Figure(data=[
+                    go.Bar(
+                        x=correlations,
+                        y=features,
+                        orientation='h',
+                        marker_color='#9b59b6',
+                        text=[f'{val:.4f}' for val in correlations],
+                        textposition='outside',
+                        textfont=dict(size=10)
+                    )
+                ])
+                fig_corr_class.update_layout(
+                    title={
+                        'text': 'Correlación de Variables con Class (Top 20)',
+                        'x': 0.5,
+                        'xanchor': 'center'
+                    },
+                    xaxis_title='Correlación Absoluta',
+                    yaxis_title='Variable',
+                    template='plotly_white',
+                    height=600,
+                    margin=dict(l=80, r=80, t=80, b=50),
+                    yaxis=dict(autorange='reversed')
+                )
+                fig_corr_class = json.dumps(fig_corr_class, cls=PlotlyJSONEncoder)
+
+        # Balanceo de clases
+        class_balance = metrics.get('class_balance', {})
+        fig_balance = None
+
+        if class_balance:
+            before = class_balance.get('before', {})
+            after = class_balance.get('after', {})
+
+            if before and after:
+                from plotly.subplots import make_subplots
+
+                fig_balance = make_subplots(
+                    rows=1, cols=2,
+                    subplot_titles=('ANTES del Balanceo', 'DESPUÉS del Balanceo')
+                )
+
+                # ANTES
+                fig_balance.add_trace(
+                    go.Bar(
+                        x=['No Fraude', 'Fraude'],
+                        y=[before.get('no_fraude', 0), before.get('fraude', 0)],
+                        marker_color=['#2ecc71', '#e74c3c'],
+                        text=[f"{before.get('no_fraude', 0):,}", f"{before.get('fraude', 0):,}"],
+                        textposition='outside',
+                        textfont=dict(size=12),
+                        showlegend=False
+                    ),
+                    row=1, col=1
+                )
+
+                # DESPUÉS
+                fig_balance.add_trace(
+                    go.Bar(
+                        x=['No Fraude', 'Fraude'],
+                        y=[after.get('no_fraude', 0), after.get('fraude', 0)],
+                        marker_color=['#2ecc71', '#e74c3c'],
+                        text=[f"{after.get('no_fraude', 0):,}", f"{after.get('fraude', 0):,}"],
+                        textposition='outside',
+                        textfont=dict(size=12),
+                        showlegend=False
+                    ),
+                    row=1, col=2
+                )
+
+                fig_balance.update_layout(
+                    title={
+                        'text': 'Impacto del Balanceo de Clases (SMOTE + Undersampling)',
+                        'x': 0.5,
+                        'xanchor': 'center'
+                    },
+                    template='plotly_white',
+                    height=450,
+                    margin=dict(l=50, r=50, t=100, b=50)
+                )
+                fig_balance.update_yaxes(title_text="Cantidad de Muestras")
+                fig_balance = json.dumps(fig_balance, cls=PlotlyJSONEncoder)
+
+        return render_template(
+            'analisis.html',
+            fig_importance_list=fig_importance_list,
+            fig_amount=fig_amount,
+            fig_time=fig_time,
+            fig_metrics_comparison=fig_metrics_comparison,
+            fig_correlation=fig_correlation,
+            fig_corr_class=fig_corr_class,
+            fig_balance=fig_balance
+        )
+    except Exception as e:
+        return render_template('analisis.html', error=str(e))
+
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)

@@ -1,0 +1,211 @@
+{% extends "base.html" %}
+
+{% block title %}Análisis Exploratorio{% endblock %}
+
+{% block content %}
+<div class="row mb-2">
+    <div class="col-12">
+        <h1 class="mb-2">
+            <i class="fas fa-chart-pie"></i> Análisis Exploratorio de Datos
+        </h1>
+        <p class="text-muted">Importancia de características, distribuciones y comparación detallada de métricas</p>
+    </div>
+</div>
+
+<!-- Feature Importance -->
+{% if fig_importance_list %}
+<div class="row mb-2">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="fas fa-star"></i> Importancia de Características</h5>
+            </div>
+            <div class="card-body">
+                <p class="text-muted">Características más relevantes para cada modelo basado en árbol</p>
+                {% for fig_data in fig_importance_list %}
+                <div class="mb-3">
+                    <h6>{{ fig_data.model }}</h6>
+                    <div id="graph-importance-{{ loop.index }}"></div>
+                </div>
+                {% if not loop.last %}
+                <hr>
+                {% endif %}
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Amount and Time Distribution -->
+<div class="row mb-2">
+    {% if fig_amount %}
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0"><i class="fas fa-dollar-sign"></i> Distribución de Amount por Clase</h5>
+            </div>
+            <div class="card-body">
+                <p class="text-muted">Estadísticas del monto de transacción</p>
+                <div id="graph-amount"></div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    {% if fig_time %}
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0"><i class="fas fa-clock"></i> Distribución de Time por Clase</h5>
+            </div>
+            <div class="card-body">
+                <p class="text-muted">Estadísticas temporales de transacción</p>
+                <div id="graph-time"></div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Metrics Comparison Subplots -->
+{% if fig_metrics_comparison %}
+<div class="row mb-2">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0"><i class="fas fa-chart-bar"></i> Comparación Detallada de Métricas</h5>
+            </div>
+            <div class="card-body">
+                <p class="text-muted">Visualización individual de cada métrica de desempeño por modelo</p>
+                <div id="graph-metrics-comparison"></div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Correlation Matrix -->
+{% if fig_correlation %}
+<div class="row mb-2">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header bg-warning text-dark">
+                <h5 class="mb-0"><i class="fas fa-th"></i> Matriz de Correlación</h5>
+            </div>
+            <div class="card-body">
+                <p class="text-muted">Correlación entre todas las variables del dataset</p>
+                <div id="graph-correlation"></div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Correlation with Class -->
+{% if fig_corr_class %}
+<div class="row mb-2">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header bg-secondary text-white">
+                <h5 class="mb-0"><i class="fas fa-chart-line"></i> Correlación con Variable Objetivo</h5>
+            </div>
+            <div class="card-body">
+                <p class="text-muted">Variables con mayor correlación (absoluta) con la variable Class</p>
+                <div id="graph-corr-class"></div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Class Balance -->
+{% if fig_balance %}
+<div class="row mb-2">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header bg-dark text-white">
+                <h5 class="mb-0"><i class="fas fa-balance-scale"></i> Balanceo de Clases</h5>
+            </div>
+            <div class="card-body">
+                <p class="text-muted">Comparación de distribución de clases antes y después de aplicar SMOTE + Undersampling</p>
+                <div id="graph-balance"></div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Mensaje si no hay datos -->
+{% if not fig_importance_list and not fig_amount and not fig_metrics_comparison and not fig_correlation and not fig_corr_class and not fig_balance and not fig_time %}
+<div class="row">
+    <div class="col-12">
+        <div class="alert alert-warning" role="alert">
+            <i class="fas fa-exclamation-triangle"></i>
+            No hay datos de análisis disponibles. Asegúrate de haber exportado los modelos con X_train y y_train desde el notebook.
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{% endblock %}
+
+{% block extra_js %}
+<!-- Feature Importance Graphs -->
+{% if fig_importance_list %}
+{% for fig_data in fig_importance_list %}
+<script>
+    var importanceData{{ loop.index }} = {{ fig_data.graph | safe }};
+    Plotly.newPlot('graph-importance-{{ loop.index }}', importanceData{{ loop.index }}.data, importanceData{{ loop.index }}.layout);
+</script>
+{% endfor %}
+{% endif %}
+
+<!-- Amount Distribution Graph -->
+{% if fig_amount %}
+<script>
+    var amountData = {{ fig_amount | safe }};
+    Plotly.newPlot('graph-amount', amountData.data, amountData.layout);
+</script>
+{% endif %}
+
+<!-- Amount Distribution Graph -->
+{% if fig_time %}
+<script>
+    var timeData = {{ fig_time | safe }};
+    Plotly.newPlot('graph-time', timeData.data, timeData.layout);
+</script>
+{% endif %}
+
+<!-- Metrics Comparison Subplots -->
+{% if fig_metrics_comparison %}
+<script>
+    var metricsComparisonData = {{ fig_metrics_comparison | safe }};
+    Plotly.newPlot('graph-metrics-comparison', metricsComparisonData.data, metricsComparisonData.layout);
+</script>
+{% endif %}
+
+<!-- Correlation Matrix -->
+{% if fig_correlation %}
+<script>
+    var correlationData = {{ fig_correlation | safe }};
+    Plotly.newPlot('graph-correlation', correlationData.data, correlationData.layout);
+</script>
+{% endif %}
+
+<!-- Correlation with Class -->
+{% if fig_corr_class %}
+<script>
+    var corrClassData = {{ fig_corr_class | safe }};
+    Plotly.newPlot('graph-corr-class', corrClassData.data, corrClassData.layout);
+</script>
+{% endif %}
+
+<!-- Class Balance -->
+{% if fig_balance %}
+<script>
+    var balanceData = {{ fig_balance | safe }};
+    Plotly.newPlot('graph-balance', balanceData.data, balanceData.layout);
+</script>
+{% endif %}
+{% endblock %}

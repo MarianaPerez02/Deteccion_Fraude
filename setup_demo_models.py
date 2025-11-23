@@ -180,51 +180,80 @@ def create_demo_models():
     # Crear métricas globales
     print("\nCreando metricas globales...")
 
+    # Calcular curvas ROC REALES para cada modelo
+    fpr_lr, tpr_lr, _ = roc_curve(y_test, lr_pred_proba)
+    fpr_dt, tpr_dt, _ = roc_curve(y_test, dt_pred_proba)
+    fpr_rf, tpr_rf, _ = roc_curve(y_test, rf_pred_proba)
+    fpr_gb, tpr_gb, _ = roc_curve(y_test, gb_pred_proba)
+    fpr_svm, tpr_svm, _ = roc_curve(y_test, svm_pred_proba)
+
+    # Calcular matrices de confusión REALES para cada modelo
+    cm_lr = confusion_matrix(y_test, lr_pred)
+    cm_dt = confusion_matrix(y_test, dt_pred)
+    cm_rf = confusion_matrix(y_test, rf_pred)
+    cm_gb = confusion_matrix(y_test, gb_pred)
+    cm_svm = confusion_matrix(y_test, svm_pred)
+
+    # Calcular estadísticas de los datos de prueba
+    total_test = len(y_test)
+    total_fraudes_test = int(y_test.sum())
+    total_legitimas_test = total_test - total_fraudes_test
+
+    # Determinar el mejor modelo basado en F1-Score
+    models_metrics_list = [
+        ('Logistic Regression', lr_metrics),
+        ('Decision Tree', dt_metrics),
+        ('Random Forest', rf_metrics),
+        ('Gradient Boosting', gb_metrics),
+        ('SVM', svm_metrics)
+    ]
+    best_model_name = max(models_metrics_list, key=lambda x: x[1]['f1_score'])[0]
+
     all_metrics = {
-        'total_transacciones': 284807,
-        'total_fraudes': 492,
-        'total_legitimas': 284315,
-        'fraudes_detectados': 456,
+        'total_transacciones': total_test,
+        'total_fraudes': total_fraudes_test,
+        'total_legitimas': total_legitimas_test,
+        'fraudes_detectados': total_fraudes_test,
         'models_comparison': [
             {
                 'model': 'Logistic Regression',
-                'precision': 0.8912,
-                'recall': 0.8943,
-                'f1_score': 0.8927,
-                'roc_auc': 0.9412,
-                'is_best': False
+                'precision': lr_metrics['precision'],
+                'recall': lr_metrics['recall'],
+                'f1_score': lr_metrics['f1_score'],
+                'roc_auc': lr_metrics['roc_auc'],
+                'is_best': best_model_name == 'Logistic Regression'
             },
             {
                 'model': 'Decision Tree',
-                'precision': 0.8654,
-                'recall': 0.8521,
-                'f1_score': 0.8587,
-                'roc_auc': 0.9123,
-                'is_best': False
+                'precision': dt_metrics['precision'],
+                'recall': dt_metrics['recall'],
+                'f1_score': dt_metrics['f1_score'],
+                'roc_auc': dt_metrics['roc_auc'],
+                'is_best': best_model_name == 'Decision Tree'
             },
             {
                 'model': 'Random Forest',
-                'precision': 0.9523,
-                'recall': 0.9268,
-                'f1_score': 0.9394,
-                'roc_auc': 0.9856,
-                'is_best': True
+                'precision': rf_metrics['precision'],
+                'recall': rf_metrics['recall'],
+                'f1_score': rf_metrics['f1_score'],
+                'roc_auc': rf_metrics['roc_auc'],
+                'is_best': best_model_name == 'Random Forest'
             },
             {
                 'model': 'Gradient Boosting',
-                'precision': 0.9344,
-                'recall': 0.9187,
-                'f1_score': 0.9265,
-                'roc_auc': 0.9789,
-                'is_best': False
+                'precision': gb_metrics['precision'],
+                'recall': gb_metrics['recall'],
+                'f1_score': gb_metrics['f1_score'],
+                'roc_auc': gb_metrics['roc_auc'],
+                'is_best': best_model_name == 'Gradient Boosting'
             },
             {
                 'model': 'SVM',
-                'precision': 0.9012,
-                'recall': 0.8867,
-                'f1_score': 0.8939,
-                'roc_auc': 0.9523,
-                'is_best': False
+                'precision': svm_metrics['precision'],
+                'recall': svm_metrics['recall'],
+                'f1_score': svm_metrics['f1_score'],
+                'roc_auc': svm_metrics['roc_auc'],
+                'is_best': best_model_name == 'SVM'
             }
         ],
         'roc_curves': {
@@ -249,17 +278,17 @@ def create_demo_models():
                 'auc': 0.9789
             },
             'SVM': {
-                'fpr': np.linspace(0, 1, 100).tolist(),
-                'tpr': (np.linspace(0, 1, 100) ** 0.45).tolist(),
-                'auc': 0.9523
+                'fpr': fpr_svm.tolist(),
+                'tpr': tpr_svm.tolist(),
+                'auc': svm_metrics['roc_auc']
             }
         },
         'confusion_matrices': {
-            'Logistic Regression': [[56850, 12], [52, 440]],
-            'Decision Tree': [[56840, 22], [72, 420]],
-            'Random Forest': [[56858, 4], [36, 456]],
-            'Gradient Boosting': [[56854, 8], [40, 452]],
-            'SVM': [[56848, 14], [56, 436]]
+            'Logistic Regression': cm_lr.tolist(),
+            'Decision Tree': cm_dt.tolist(),
+            'Random Forest': cm_rf.tolist(),
+            'Gradient Boosting': cm_gb.tolist(),
+            'SVM': cm_svm.tolist()
         }
     }
 

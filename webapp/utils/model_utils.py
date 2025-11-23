@@ -25,7 +25,7 @@ def load_model():
 
     # Rutas base
     base_dir = Path(__file__).parent.parent.parent
-    models_dir = base_dir / 'models'
+    models_dir = base_dir / 'Notebook' / 'models'
 
     try:
         # Intentar cargar modelos reales si existen
@@ -33,7 +33,7 @@ def load_model():
             model_files = list(models_dir.glob('*_model.pkl'))
 
             if model_files:
-                print("📦 Cargando modelos entrenados...")
+                print("Cargando modelos entrenados...")
 
                 for model_file in model_files:
                     model_name = model_file.stem.replace('_model', '').replace('_', ' ').title()
@@ -41,7 +41,7 @@ def load_model():
                     try:
                         with open(model_file, 'rb') as f:
                             MODELS[model_name] = pickle.load(f)
-                        print(f"   ✅ {model_name} cargado")
+                        print(f"   OK - {model_name} cargado")
 
                         # Cargar métricas asociadas
                         metrics_file = model_file.parent / f"{model_file.stem.replace('_model', '')}_metrics.pkl"
@@ -50,14 +50,14 @@ def load_model():
                                 MODEL_METRICS[model_name] = pickle.load(f)
 
                     except Exception as e:
-                        print(f"   ⚠️ Error cargando {model_name}: {e}")
+                        print(f"   Advertencia - Error cargando {model_name}: {e}")
 
                 # Cargar scaler si existe
                 scaler_file = models_dir / 'scaler.pkl'
                 if scaler_file.exists():
                     with open(scaler_file, 'rb') as f:
                         SCALERS['scaler'] = pickle.load(f)
-                    print("   ✅ Scaler cargado")
+                    print("   OK - Scaler cargado")
 
                 # Cargar métricas globales
                 all_metrics_file = models_dir / 'all_metrics.pkl'
@@ -65,17 +65,17 @@ def load_model():
                     with open(all_metrics_file, 'rb') as f:
                         global_metrics = pickle.load(f)
                         MODEL_METRICS['global'] = global_metrics
-                    print("   ✅ Métricas globales cargadas")
+                    print("   OK - Metricas globales cargadas")
 
-                print(f"\n✅ Total de modelos cargados: {len(MODELS)}")
+                print(f"\nOK - Total de modelos cargados: {len(MODELS)}")
                 return MODELS
 
         # Si no hay modelos, usar datos de ejemplo
-        print("⚠️ Advertencia: No se encontraron modelos entrenados. Usando datos de prueba.")
-        print("📝 Para usar modelos reales:")
+        print("Advertencia: No se encontraron modelos entrenados. Usando datos de prueba.")
+        print("Para usar modelos reales:")
         print("   1. Entrena tus modelos en el notebook")
         print("   2. Ejecuta: from export_models import export_models_from_notebook")
-        print("   3. Reinicia la aplicación Flask")
+        print("   3. Reinicia la aplicacion Flask")
 
         # Datos de ejemplo para testing
         DATA_INFO = {
@@ -102,8 +102,8 @@ def save_model(model, model_name, scaler=None, metrics=None):
         metrics (dict): Métricas del modelo (opcional)
     """
     base_dir = Path(__file__).parent.parent.parent
-    models_dir = base_dir / 'models'
-    models_dir.mkdir(exist_ok=True)
+    models_dir = base_dir / 'Notebook' / 'models'
+    models_dir.mkdir(parents=True, exist_ok=True)
 
     # Guardar modelo
     model_path = models_dir / f'{model_name.lower().replace(" ", "_")}_model.pkl'
@@ -122,7 +122,7 @@ def save_model(model, model_name, scaler=None, metrics=None):
         with open(metrics_path, 'wb') as f:
             pickle.dump(metrics, f)
 
-    print(f"✅ Modelo '{model_name}' guardado exitosamente en {model_path}")
+    print(f"OK - Modelo '{model_name}' guardado exitosamente en {model_path}")
 
 def get_model_metrics():
     """

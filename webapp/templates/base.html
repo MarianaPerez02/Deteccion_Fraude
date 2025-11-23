@@ -42,6 +42,11 @@
                         </a>
                     </li>
                     <li class="nav-item">
+                        <a class="nav-link {% if request.endpoint == 'analisis' %}active{% endif %}" href="/analisis">
+                            <i class="fas fa-chart-pie"></i> Análisis
+                        </a>
+                    </li>
+                    <li class="nav-item">
                         <a class="nav-link {% if request.endpoint == 'prediccion' %}active{% endif %}" href="/prediccion">
                             <i class="fas fa-search"></i> Predicción
                         </a>
