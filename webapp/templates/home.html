@@ -14,12 +14,13 @@
 <!-- KPIs -->
 <div class="row mb-2">
     <div class="col-md-3">
-        <div class="card text-white bg-info mb-3">
-            <div class="card-body">
-                <div class="d-flex justify-content-between align-items-center">
+        <div class="card text-white bg-info mb-3 h-100">
+            <div class="card-body d-flex flex-column">
+                <div class="d-flex justify-content-between align-items-start flex-grow-1">
                     <div>
                         <h6 class="card-title">Total Transacciones</h6>
                         <h2 class="mb-0">{{ kpis.total_transacciones }}</h2>
+                        <small class="opacity-75">&nbsp;</small>
                     </div>
                     <div>
                         <i class="fas fa-credit-card fa-3x opacity-50"></i>
@@ -30,12 +31,13 @@
     </div>
 
     <div class="col-md-3">
-        <div class="card text-white bg-danger mb-3">
-            <div class="card-body">
-                <div class="d-flex justify-content-between align-items-center">
+        <div class="card text-white bg-danger mb-3 h-100">
+            <div class="card-body d-flex flex-column">
+                <div class="d-flex justify-content-between align-items-start flex-grow-1">
                     <div>
                         <h6 class="card-title">Fraudes Detectados</h6>
                         <h2 class="mb-0">{{ kpis.fraudes_detectados }}</h2>
+                        <small class="opacity-75">&nbsp;</small>
                     </div>
                     <div>
                         <i class="fas fa-exclamation-triangle fa-3x opacity-50"></i>
@@ -46,12 +48,13 @@
     </div>
 
     <div class="col-md-3">
-        <div class="card text-white bg-success mb-3">
-            <div class="card-body">
-                <div class="d-flex justify-content-between align-items-center">
+        <div class="card text-white bg-success mb-3 h-100">
+            <div class="card-body d-flex flex-column">
+                <div class="d-flex justify-content-between align-items-start flex-grow-1">
                     <div>
                         <h6 class="card-title">Precisión Modelo</h6>
                         <h2 class="mb-0">{{ "%.2f%%"|format(kpis.accuracy * 100) if kpis.accuracy != 'N/A' else 'N/A' }}</h2>
+                        <small class="opacity-75">{{ kpis.best_model_name }}</small>
                     </div>
                     <div>
                         <i class="fas fa-check-circle fa-3x opacity-50"></i>
@@ -62,12 +65,13 @@
     </div>
 
     <div class="col-md-3">
-        <div class="card text-white bg-warning mb-3">
-            <div class="card-body">
-                <div class="d-flex justify-content-between align-items-center">
+        <div class="card text-white bg-warning mb-3 h-100">
+            <div class="card-body d-flex flex-column">
+                <div class="d-flex justify-content-between align-items-start flex-grow-1">
                     <div>
                         <h6 class="card-title">Recall (Sensibilidad)</h6>
                         <h2 class="mb-0">{{ "%.2f%%"|format(kpis.recall * 100) if kpis.recall != 'N/A' else 'N/A' }}</h2>
+                        <small class="opacity-75">{{ kpis.best_model_name }}</small>
                     </div>
                     <div>
                         <i class="fas fa-bullseye fa-3x opacity-50"></i>

@@ -20,12 +20,19 @@ def home():
     try:
         metrics = get_model_metrics()
 
+        # Obtener el nombre del mejor modelo
+        best_model_name = 'N/A'
+        if 'models_comparison' in metrics and metrics['models_comparison']:
+            best_model = max(metrics['models_comparison'], key=lambda x: x.get('f1_score', 0))
+            best_model_name = best_model.get('model', 'N/A')
+
         # KPIs principales
         kpis = {
             'total_transacciones': metrics.get('total_transacciones', 'N/A'),
             'fraudes_detectados': metrics.get('fraudes_detectados', 'N/A'),
             'accuracy': metrics.get('best_model_accuracy', 'N/A'),
-            'recall': metrics.get('best_model_recall', 'N/A')
+            'recall': metrics.get('best_model_recall', 'N/A'),
+            'best_model_name': best_model_name
         }
 
         # Gráfico de distribución de clases
@@ -46,7 +53,7 @@ def home():
         ])
         fig_dist.update_layout(
             title={
-                'text': 'Distribución de Transacciones en el Dataset',
+                'text': 'Distribución de Transacciones en el Dataset de Prueba (Test Set)',
                 'x': 0.5,
                 'xanchor': 'center'
             },
@@ -260,6 +267,18 @@ def matriz_confusion():
                         f'{count:,}<br>({percentage:.2f}%)'
                     )
 
+            # Crear escala de colores personalizada para mejor distinción
+            # Verde oscuro para TN (True Negative - alto y bueno)
+            # Verde claro para TP (True Positive - bueno pero menor cantidad)
+            # Rojo claro para FP (False Positive - error)
+            # Rojo oscuro para FN (False Negative - error crítico)
+            colorscale = [
+                [0, '#d73027'],      # Rojo oscuro (valores bajos)
+                [0.33, '#fc8d59'],   # Naranja
+                [0.66, '#fee090'],   # Amarillo claro
+                [1, '#1a9850']       # Verde oscuro (valores altos)
+            ]
+
             # Crear heatmap de la matriz de confusión
             fig = go.Figure(data=go.Heatmap(
                 z=cm,
@@ -268,8 +287,8 @@ def matriz_confusion():
                 text=[[annotations[0], annotations[1]],
                       [annotations[2], annotations[3]]],
                 texttemplate='%{text}',
-                textfont=dict(size=12),
-                colorscale='RdYlGn_r',
+                textfont=dict(size=14, color='white'),
+                colorscale=colorscale,
                 showscale=True,
                 colorbar=dict(title="Cantidad")
             ))
